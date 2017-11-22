@@ -1,0 +1,7 @@
+name: chaoskube
+namespace: kube-system
+chart: "stable/chaoskube"
+set:
+  - labels='app=mate,stage!=prod'
+  - namespaces='!kube-system,!production'
+values: ~

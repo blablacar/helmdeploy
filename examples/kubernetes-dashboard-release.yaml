@@ -1,0 +1,4 @@
+name: kubernetes-dashboard
+chart: ./kubernetes-dashboard-0.4.1.tgz
+cluster: minikube
+namespace: kube-system
