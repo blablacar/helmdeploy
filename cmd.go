@@ -28,6 +28,11 @@ var (
 		RunE: status,
 		Args: cobra.ExactArgs(1),
 	}
+	helmHostCmd = &cobra.Command{
+		Use:  "helm-host <release_manifest>",
+		RunE: helmHost,
+		Args: cobra.ExactArgs(1),
+	}
 )
 
 func main() {
@@ -40,6 +45,7 @@ func main() {
 	rootCmd.AddCommand(deployCmd)
 	rootCmd.AddCommand(diffCmd)
 	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(helmHostCmd)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -109,5 +115,31 @@ func diff(cmd *cobra.Command, args []string) error {
 		Context:  3,
 	})
 	fmt.Printf(diff)
+	return nil
+}
+
+func helmHost(cmd *cobra.Command, args []string) error {
+	manifestPath := args[0]
+	helmDeployer, err := NewDeployerFromManifest(manifestPath, tillerNamespace, tillerService)
+	if err != nil {
+		return err
+	}
+
+	//spew.Dump(helmDeployer.KubeClient)
+	endpoints, err := helmDeployer.KubeClient.(*Clientset).GetEndpoints(tillerNamespace, tillerService)
+	if err != nil {
+		return err
+	}
+	if len(endpoints) > 0 {
+		fmt.Printf("HELM_HOST=\"%s\"\n", endpoints[0])
+	} else {
+		return fmt.Errorf("Could not find any %s endpoint in namespace %s", tillerService, tillerNamespace)
+	}
+
+	//newRelease, err := helmDeployer.Deploy(true)
+	//if err != nil {
+	//	return err
+	//}
+
 	return nil
 }

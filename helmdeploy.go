@@ -61,7 +61,7 @@ func NewDeployerFromManifest(manifestPath string, tillerNamespace, tillerService
 		Chart:       chart,
 		Values:      manifest.Values,
 		ValueFiles:  manifest.ValueFiles,
-		KubeClient:  nil,
+		KubeClient:  kubeClient,
 		//TillerClient: helm.NewClient(helm.Host("127.0.0.1:44134")),
 		TillerClient: helm.NewClient(helm.Host(tillerEndpoints[0])),
 	}, nil
