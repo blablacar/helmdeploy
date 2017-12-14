@@ -13,6 +13,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/chartutil"
+	"k8s.io/helm/pkg/engine"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	hapi_release "k8s.io/helm/pkg/proto/hapi/release"
@@ -174,4 +175,23 @@ func (d *Deploy) Content() (*hapiRelease, error) {
 		return &hapiRelease{}, err
 	}
 	return &hapiRelease{Release: response.GetRelease()}, nil
+}
+
+func (d *Deploy) Render() (map[string]string, error) {
+	config := &chart.Config{}
+	options := chartutil.ReleaseOptions{
+		Name:      d.ReleaseName,
+		Namespace: d.Namespace,
+	}
+	capabilities := &chartutil.Capabilities{}
+
+	values, err := chartutil.ToRenderValuesCaps(d.Chart, config, options, capabilities)
+
+	if err != nil {
+		return nil, err
+	}
+
+	renderer := engine.New()
+	out, err := renderer.Render(d.Chart, values)
+	return out, nil
 }

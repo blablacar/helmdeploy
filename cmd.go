@@ -33,6 +33,16 @@ var (
 		RunE: helmHost,
 		Args: cobra.ExactArgs(1),
 	}
+	templateCmd = &cobra.Command{
+		Use:  "template <release_manifest>",
+		RunE: template,
+		Args: cobra.ExactArgs(1),
+	}
+	lintCmd = &cobra.Command{
+		Use:  "lint <release_manifest>",
+		RunE: lint,
+		Args: cobra.ExactArgs(1),
+	}
 )
 
 func main() {
@@ -46,6 +56,8 @@ func main() {
 	rootCmd.AddCommand(diffCmd)
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(helmHostCmd)
+	rootCmd.AddCommand(templateCmd)
+	rootCmd.AddCommand(lintCmd)
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -125,21 +137,66 @@ func helmHost(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	//spew.Dump(helmDeployer.KubeClient)
 	endpoints, err := helmDeployer.KubeClient.(*Clientset).GetEndpoints(tillerNamespace, tillerService)
 	if err != nil {
 		return err
 	}
+
 	if len(endpoints) > 0 {
 		fmt.Printf("HELM_HOST=\"%s\"\n", endpoints[0])
 	} else {
 		return fmt.Errorf("Could not find any %s endpoint in namespace %s", tillerService, tillerNamespace)
 	}
+	return nil
+}
 
-	//newRelease, err := helmDeployer.Deploy(true)
+func template(cmd *cobra.Command, args []string) error {
+	manifestPath := args[0]
+
+	helmDeployer, err := NewDeployerFromManifest(manifestPath, tillerNamespace, tillerService)
+	if err != nil {
+		return err
+	}
+	out, err := helmDeployer.Render()
+	if err != nil {
+		return err
+	}
+	for k, v := range out {
+		fmt.Printf("# Source: %s\n", k)
+		fmt.Println(v)
+	}
+
+	//
+	return nil
+}
+
+func lint(cmd *cobra.Command, args []string) error {
+	manifestPath := args[0]
+
+	helmDeployer, err := NewDeployerFromManifest(manifestPath, tillerNamespace, tillerService)
+	if err != nil {
+		return err
+	}
+	out, err := helmDeployer.Render()
+
+	if err != nil {
+		return err
+	}
+
+	//TODO : for now we lint the k8s resource, not the helm chart.
+	//tmpDir, err := ioutil.TempDir("", "helmdeploy-linter")
 	//if err != nil {
 	//	return err
 	//}
 
+	for resource, content := range out {
+		fmt.Printf("# Source: %s\n", resource)
+		err := LintResource(content)
+		if err != nil {
+			fmt.Println(err.Error())
+		} else {
+			fmt.Println("OK")
+		}
+	}
 	return nil
 }

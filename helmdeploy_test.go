@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	hapi_release "k8s.io/helm/pkg/proto/hapi/release"
@@ -91,4 +92,23 @@ func TestContent(t *testing.T) {
 	if release.Name != "chaoskube" {
 		t.Errorf("Unexpected release : %v", release)
 	}
+}
+
+func TestRender(t *testing.T) {
+	//deploy, err := NewDeployerFromManifest("./examples/kubernetes-dashboard-release.yaml", "kube-system", "tiller-deploy")
+	manifest, err := NewManifestFromFile("./examples/kubernetes-dashboard-release.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chart, err := chartutil.Load(manifest.Chart)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	deploy := &Deploy{
+		ReleaseName: manifest.Name,
+		Namespace:   manifest.Namespace,
+		Chart:       chart,
+	}
+	deploy.Render()
 }
