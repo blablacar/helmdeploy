@@ -1,14 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/proto/hapi/chart"
 	hapi_release "k8s.io/helm/pkg/proto/hapi/release"
-	hapi_services "k8s.io/helm/pkg/proto/hapi/services"
 )
 
 func TestNewDeployerFromManifest(t *testing.T) {
@@ -19,10 +16,6 @@ type FakeClient struct {
 	helm.FakeClient
 }
 
-func (c *FakeClient) UpdateReleaseFromChart(rlsName string, chart *chart.Chart, opts ...helm.UpdateOption) (*hapi_services.UpdateReleaseResponse, error) {
-	return &hapi_services.UpdateReleaseResponse{c.Rels[0]}, c.Err
-}
-
 func TestIsIstalled(t *testing.T) {
 	deploy := &Deploy{
 		ReleaseName: "chaoskube",
@@ -31,7 +24,6 @@ func TestIsIstalled(t *testing.T) {
 			Rels: []*hapi_release.Release{
 				&hapi_release.Release{Name: "chaoskube"},
 			},
-			Err: nil,
 		},
 	}
 	installed := deploy.IsInstalled()
@@ -40,7 +32,7 @@ func TestIsIstalled(t *testing.T) {
 	}
 
 	deploy.TillerClient = &helm.FakeClient{
-		Err: fmt.Errorf("release: %q not found", deploy.ReleaseName),
+		Rels: nil,
 	}
 	installed = deploy.IsInstalled()
 	if installed != false {
@@ -57,7 +49,6 @@ func TestDeploy(t *testing.T) {
 				Rels: []*hapi_release.Release{
 					&hapi_release.Release{Name: "chaoskube"},
 				},
-				Err: nil,
 			},
 		},
 	}
@@ -80,7 +71,6 @@ func TestContent(t *testing.T) {
 				Rels: []*hapi_release.Release{
 					&hapi_release.Release{Name: "chaoskube"},
 				},
-				Err: nil,
 			},
 		},
 	}
@@ -95,7 +85,6 @@ func TestContent(t *testing.T) {
 }
 
 func TestRender(t *testing.T) {
-	//deploy, err := NewDeployerFromManifest("./examples/kubernetes-dashboard-release.yaml", "kube-system", "tiller-deploy")
 	manifest, err := NewManifestFromFile("./examples/kubernetes-dashboard-release.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -110,5 +99,11 @@ func TestRender(t *testing.T) {
 		Namespace:   manifest.Namespace,
 		Chart:       chart,
 	}
-	deploy.Render()
+	res, err := deploy.Render()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := res["kubernetes-dashboard/templates/deployment.yaml"]; !ok {
+		t.Errorf("Unexpected templating result : %v", res)
+	}
 }
