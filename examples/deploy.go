@@ -1,6 +1,6 @@
 package main
 
-import "github.com/remyLemeunier/helmdeploy"
+import "github.com/blablacar/helmdeploy"
 
 func main() {
 	helmdeployer, _ := helmdeploy.NewDeployerFromManifest("")
