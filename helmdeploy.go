@@ -69,9 +69,17 @@ func NewDeployerFromManifest(manifestPath string, tillerNamespace, tillerService
 }
 
 func (d *Deploy) IsInstalled() bool {
-	_, err := d.TillerClient.ReleaseHistory(d.ReleaseName, helm.WithMaxHistory(1))
+	h, err := d.TillerClient.ReleaseHistory(d.ReleaseName, helm.WithMaxHistory(1))
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("release: %q not found", d.ReleaseName)) {
 		return false
+	}
+
+	if len(h.Releases) == 0 {
+		return false
+	}
+
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 	return true
 }
@@ -178,10 +186,17 @@ func (d *Deploy) Content() (*hapiRelease, error) {
 }
 
 func (d *Deploy) Render() (map[string]string, error) {
-	config := &chart.Config{}
 	options := chartutil.ReleaseOptions{
 		Name:      d.ReleaseName,
 		Namespace: d.Namespace,
+	}
+	overrides, err := d.MergeOverrides()
+	if err != nil {
+		return nil, err
+	}
+
+	config := &chart.Config{
+		Raw: string(overrides),
 	}
 	capabilities := &chartutil.Capabilities{}
 
