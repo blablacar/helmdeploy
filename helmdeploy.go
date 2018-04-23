@@ -74,13 +74,14 @@ func (d *Deploy) IsInstalled() bool {
 		return false
 	}
 
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	if len(h.Releases) == 0 {
 		return false
 	}
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 	return true
 }
 
