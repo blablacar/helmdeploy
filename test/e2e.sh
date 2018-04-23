@@ -2,8 +2,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-kubernetes_version=${KUBERNETES_VERSION:-"1.8.0"}
+kubernetes_version=${KUBERNETES_VERSION:-"1.9.0"}
 helm_version=${HELM_VERSION:-"2.7.2"}
+minikube_version=${MINIKUBE_VERSION:-"0.25.2"}
 use_sudo=${E2E_USE_SUDO:-"no"}
 
 
@@ -15,7 +16,7 @@ function kubectl::install() {
 
 
 function minikube::install() {
-	curl -Lo minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
+	curl -Lo minikube "https://storage.googleapis.com/minikube/releases/v${minikube_version}/minikube-linux-amd64"
 	chmod +x minikube
 	maybesudo mv minikube /usr/local/bin/
 }

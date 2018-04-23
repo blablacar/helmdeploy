@@ -55,16 +55,16 @@ func NewDeployerFromManifest(manifestPath string, tillerNamespace, tillerService
 	if err != nil {
 		return &Deploy{}, err
 	}
+	log.Debugf("Using Tiller endpoint %s", tillerEndpoints[0])
 
 	return &Deploy{
-		ReleaseName: manifest.Name,
-		Namespace:   manifest.Namespace,
-		Chart:       chart,
-		Values:      manifest.Values,
-		ValueFiles:  manifest.ValueFiles,
-		KubeClient:  kubeClient,
-		//TillerClient: helm.NewClient(helm.Host("127.0.0.1:44134")),
-		TillerClient: helm.NewClient(helm.Host(tillerEndpoints[0])),
+		ReleaseName:  manifest.Name,
+		Namespace:    manifest.Namespace,
+		Chart:        chart,
+		Values:       manifest.Values,
+		ValueFiles:   manifest.ValueFiles,
+		KubeClient:   kubeClient,
+		TillerClient: helm.NewClient(helm.Host(tillerEndpoints[0]), helm.ConnectTimeout(5)),
 	}, nil
 }
 
@@ -74,13 +74,14 @@ func (d *Deploy) IsInstalled() bool {
 		return false
 	}
 
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	if len(h.Releases) == 0 {
 		return false
 	}
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 	return true
 }
 
